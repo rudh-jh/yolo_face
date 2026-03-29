@@ -1,0 +1,10 @@
+train: ./datasets/images/train
+val: ./datasets/images/val
+
+names: ['angry', 'fear', 'happy', 'natural', 'sad', 'surprised']
+
+
+
+
+
+

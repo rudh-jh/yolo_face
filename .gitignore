@@ -1,0 +1,9 @@
+.idea/
+datasets/
+runs/
+__pycache__/
+*.pyc
+*.pyo
+*.pt
+*.pth
+project_structure.txt
