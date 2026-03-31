@@ -1,5 +1,7 @@
 .idea/
+data/
 datasets/
+envs/
 runs/
 __pycache__/
 *.pyc
