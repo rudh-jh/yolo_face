@@ -2,7 +2,8 @@
 # 加载库
 # ----------------------------------------------------------------------------------------------------------------------
 
-from ultralytics.utils.ops import non_max_suppression, scale_boxes
+# from ultralytics.utils.ops import non_max_suppression, scale_boxes
+from ultralytics import YOLO
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QPainter, QPixmap
 import numpy as np
@@ -76,59 +77,49 @@ class Yolo():
     # model.names if hasattr(model, 'names') else model.modules.names --- 获取类别信息
     # ------------------------------------------------------------------------------------------------------------------
 
+
+
     def prepare(self):
-        global model, device, classes, names
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = torch.load(opt.weights, map_location=device)['model'].float()
-        model.to(device).eval()
-        names = model.names if hasattr(model, 'names') else model.modules.names
+        global model, device, names
+        device = 0 if torch.cuda.is_available() else "cpu"
+        model = YOLO(opt.weights)
+        names = model.names
 
     # ------------------------------------------------------------------------------------------------------------------
     # 检测
     # ------------------------------------------------------------------------------------------------------------------
 
+
     def detect(self, frame):
-
-        # --------------------------------------------------------------------------------------------------------------
-        # 图像预处理
-        # --------------------------------------------------------------------------------------------------------------
-
-        im0 = frame
-        img = letterbox(frame, new_shape=640)[0]
-        img = img[:, :, ::-1].transpose(2, 0, 1)
-        img = np.ascontiguousarray(img, dtype=np.float32)
-        img /= 255.0
-
-        img = torch.from_numpy(img).to(device)
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-
-        # --------------------------------------------------------------------------------------------------------------
-        # 识别，以及识别信息的筛选
-        # --------------------------------------------------------------------------------------------------------------
-
-        pred = model(img)[0]
-        pred = non_max_suppression(pred, opt.conf_thres, opt.nms_thres)
-
-        # --------------------------------------------------------------------------------------------------------------
-        # 遍历检测结果，存放在列表中
-        # --------------------------------------------------------------------------------------------------------------
+        results = model.predict(
+            source=frame,
+            imgsz=640,
+            conf=opt.conf_thres,
+            iou=opt.nms_thres,
+            device=device,
+            verbose=False
+        )
 
         boxes = []
-        for i, det in enumerate(pred):
-            if det is not None and len(det):
-                det[:, :4] = scale_boxes(img.shape[2:], det[:, :4], im0.shape).round()
+        if not results:
+            return boxes
 
-                for *xyxy, score, cls in det:
-                    label = names[int(cls)]
-                    boxes.append([int(xyxy[0]),
-                                  int(xyxy[1]),
-                                  int(xyxy[2]),
-                                  int(xyxy[3]),
-                                  float(score),
-                                  int(cls),
-                                  label
-                                  ])
+        result = results[0]
+        for box in result.boxes:
+            xyxy = box.xyxy[0].tolist()
+            score = float(box.conf[0])
+            cls = int(box.cls[0])
+            label = names[cls]
+
+            boxes.append([
+                int(xyxy[0]),
+                int(xyxy[1]),
+                int(xyxy[2]),
+                int(xyxy[3]),
+                score,
+                cls,
+                label
+            ])
 
         return boxes
 
