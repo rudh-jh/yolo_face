@@ -309,49 +309,30 @@ class UiMainWindow(QtWidgets.QWidget):
     # 点击'打开摄像头'按键调用的函数
     # ------------------------------------------------------------------------------------------------------------------
 
-    # def button_open_camera_clicked(self):
-    #     self.close_video()
-    #     if not self.timer_camera.isActive():
-    #         flag = self.cap.open(self.CAM_NUM, cv2.CAP_DSHOW)
-    #         self.flag_recognition = False
-    #         if not flag:
-    #             QtWidgets.QMessageBox.warning(self, 'warning', "请检查相机于电脑是否连接正确", buttons=QtWidgets.QMessageBox.Ok)
-    #         else:
-    #             self.timer_camera.start(30)
-    #             self.button_open_camera.setText('关闭相机')
-    #     else:
-    #         self.timer_camera.stop()
-    #         self.cap.release()
-    #         self.label_show_camera.clear()
-    #         self.button_open_camera.setText('打开相机')
-
     def button_open_camera_clicked(self):
-        # 如果相机已经开着，就直接关闭并返回
+        # 已打开时，点击同一个按钮直接关闭相机
         if self.timer_camera.isActive():
             self.close_video()
             return
 
-        # 如果之前打开过别的内容，先清一下界面状态
+        # 未打开时，尝试打开相机
         self.label_show_info.setText('')
         self.myFileStr = ''
         self.flag_recognition = False
+        self.CAM_NUM = 0
 
         flag = self.cap.open(self.CAM_NUM, cv2.CAP_DSHOW)
         if not flag:
             QtWidgets.QMessageBox.warning(
                 self,
                 'warning',
-                "请检查相机与电脑是否连接正确",
+                "请检查相机于电脑是否连接正确",
                 buttons=QtWidgets.QMessageBox.Ok
             )
             return
 
         self.timer_camera.start(30)
         self.button_open_camera.setText('关闭相机')
-
-    def closeEvent(self, event):
-        self.close_video()
-        event.accept()
 
     # ----------------------------------------------------------------------------------------------------------------------
     # 识别按键调用的函数，将标识为转为True
@@ -468,23 +449,27 @@ class UiMainWindow(QtWidgets.QWidget):
         else:
             self.close_video()
             return
-        # else:
-        #     self.cap.release()
-        #     self.label_show_camera.clear()
-        #     self.label_show_info.setText('')
-        #     self.CAM_NUM = 0
     # ----------------------------------------------------------------------------------------------------------------------
     # 清理UI界面屏幕函数
     # ----------------------------------------------------------------------------------------------------------------------
 
     def close_video(self):
-        self.timer_camera.stop()
-        self.cap.release()
+        if self.timer_camera.isActive():
+            self.timer_camera.stop()
+
+        if self.cap.isOpened():
+            self.cap.release()
+
         self.label_show_camera.clear()
         self.button_open_camera.setText('打开相机')
         self.CAM_NUM = 0
         self.label_show_info.setText('')
         self.myFileStr = ''
+        self.flag_recognition = False
+
+    def closeEvent(self, event):
+        self.close_video()
+        event.accept()
 
     # ------------------------------------------------------------------------------------------------
     # 背景设置，替换背景直接换图片
